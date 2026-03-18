@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, minimum-scale=1"
+    />
+    <title>소방서 QR 출석 관리</title>
+    <link rel="stylesheet" href="./style.css" />
+    <!-- Chart.js for department statistics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="./localdb.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <div class="app-card">
+        <header class="app-header">
+          <div class="app-title">
+            <div class="app-title-mark">🔥</div>
+            <div>
+              <h1>소방서 QR 코드 출석관리</h1>
+              <div class="panel-subtitle">
+                실시간 출석 현황 · 부서별 통계 · QR 자동 생성
+              </div>
+            </div>
+          </div>
+          <div class="flex gap-8">
+            <span class="badge">
+              <span
+                style="
+                  width: 8px;
+                  height: 8px;
+                  border-radius: 50%;
+                  background: #4caf50;
+                "
+              ></span>
+              LIVE 출석 감지
+            </span>
+          </div>
+        </header>
+
+        <main class="app-main-layout">
+          <!-- Left: 교육관리 공간 -->
+          <section class="panel" aria-label="출석 현황 및 통계">
+            <div class="panel-header">
+              <div>
+                <h2>교육관리</h2>
+                <div class="panel-subtitle">
+                  전체 세션 출석 현황과 부서별 통계를 확인합니다.
+                </div>
+              </div>
+              <button id="refresh-all" class="btn btn-outline btn-sm">
+                전체 새로고침
+              </button>
+            </div>
+
+            <div class="chip">오늘 포함 최근 14일 세션</div>
+
+            <div id="session-list" class="session-list">
+              <!-- Filled by JS -->
+            </div>
+
+            <div class="mt-12 chart-card">
+              <div class="flex-between">
+                <div>
+                  <div class="panel-subtitle">부서별 출석 통계</div>
+                  <div id="chart-session-label" class="text-muted" style="font-size: 0.8rem">
+                    세션을 선택하면 통계를 볼 수 있습니다.
+                  </div>
+                </div>
+                <button
+                  id="open-chart-modal"
+                  class="btn btn-outline btn-sm"
+                  type="button"
+                >
+                  확대 보기
+                </button>
+              </div>
+              <canvas id="dept-chart" height="130"></canvas>
+            </div>
+          </section>
+
+          <!-- Right: 교육 생성 공간 -->
+          <section class="panel" aria-label="교육 세션 생성 및 QR 코드">
+            <div class="panel-header">
+              <div>
+                <h2>교육 생성</h2>
+                <div class="panel-subtitle">
+                  교육 일정과 교육명을 입력하면 출석용 QR을 자동 발급합니다.
+                </div>
+              </div>
+            </div>
+
+            <form id="create-session-form" class="form-grid">
+              <div class="field">
+                <label for="session-date">교육 일자</label>
+                <input
+                  id="session-date"
+                  type="date"
+                  required
+                  autocomplete="off"
+                />
+              </div>
+              <div class="field">
+                <label for="session-title">교육명</label>
+                <input
+                  id="session-title"
+                  type="text"
+                  placeholder="예) 3월 소방안전 교육"
+                  required
+                />
+                <div class="field-help">
+                  출석 페이지와 관리 화면에 함께 표시됩니다.
+                </div>
+              </div>
+              <div class="field">
+                <label for="session-note">비고 (선택)</label>
+                <input
+                  id="session-note"
+                  type="text"
+                  placeholder="예) 전 직원 대상, 3층 강당"
+                />
+              </div>
+              <div class="text-right mt-8">
+                <button type="submit" class="btn btn-primary">
+                  세션 생성 &amp; QR 발급
+                </button>
+              </div>
+            </form>
+
+            <div class="qr-box mt-12">
+              <div class="panel-header">
+                <div>
+                  <h2>출석용 QR 코드</h2>
+                  <div
+                    id="qr-session-title"
+                    class="panel-subtitle"
+                    style="margin-top: 4px"
+                  >
+                    최근 생성한 세션을 선택하면 QR이 표시됩니다.
+                  </div>
+                </div>
+              </div>
+
+              <div id="qr-placeholder" class="qr-box-placeholder mt-8">
+                아직 선택된 세션이 없습니다. 상단 목록에서 세션을 선택하거나
+                새로 생성하세요.
+              </div>
+
+              <div id="qr-content" class="hidden">
+                <div class="qr-image-wrap">
+                  <img id="qr-image" alt="출석용 QR 코드" />
+                </div>
+                <div id="qr-url" class="qr-url"></div>
+                <button id="copy-qr-url" class="btn btn-outline btn-sm">
+                  출석 URL 복사
+                </button>
+              </div>
+            </div>
+
+            <div class="mt-12 text-muted" style="font-size: 0.75rem">
+              - 로컬 저장소 기반으로 출석 현황이 자동 반영됩니다(다른 탭도 동기화).<br />
+              - 모바일에서 직접 QR을 스캔하여 출석을 등록할 수 있습니다.
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <!-- 모달: 세션 출석 상세 -->
+    <div id="attendance-modal" class="modal-backdrop hidden" role="dialog">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>출석 상세</h3>
+          <button
+            type="button"
+            class="modal-close"
+            aria-label="닫기"
+            data-close-modal="attendance-modal"
+          >
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <div id="attendance-modal-session" class="panel-subtitle"></div>
+          <div id="attendance-modal-info" class="pill pill-info mt-8">
+            세션별 출석 명단을 확인합니다.
+          </div>
+
+          <div class="mt-8" style="max-height: 260px; overflow-y: auto">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>이름</th>
+                  <th>부서</th>
+                  <th>시간</th>
+                </tr>
+              </thead>
+              <tbody id="attendance-modal-body">
+                <!-- Filled by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-outline btn-sm"
+            data-close-modal="attendance-modal"
+          >
+            닫기
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 모달: 통계 확대 -->
+    <div id="chart-modal" class="modal-backdrop hidden" role="dialog">
+      <div class="modal" style="max-width: 520px">
+        <div class="modal-header">
+          <h3>부서별 출석 통계 (확대)</h3>
+          <button
+            type="button"
+            class="modal-close"
+            aria-label="닫기"
+            data-close-modal="chart-modal"
+          >
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <div
+            id="chart-modal-session-label"
+            class="panel-subtitle"
+            style="margin-bottom: 6px"
+          ></div>
+          <canvas id="dept-chart-modal" height="220"></canvas>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-outline btn-sm"
+            data-close-modal="chart-modal"
+          >
+            닫기
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast-container hidden" id="toast-container"></div>
+
+    <script src="./admin.js"></script>
+  </body>
+</html>
+

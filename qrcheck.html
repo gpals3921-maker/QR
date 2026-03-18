@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, minimum-scale=1"
+    />
+    <title>소방서 QR 출석 입력</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script src="./localdb.js"></script>
+  </head>
+  <body>
+    <div class="qr-page">
+      <div class="qr-card">
+        <header class="qr-header">
+          <div>
+            <h1>교육 출석 확인</h1>
+            <div class="panel-subtitle">
+              QR로 접속한 교육에 출석을 남깁니다.
+            </div>
+          </div>
+          <div class="badge">
+            <span
+              style="
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: #4caf50;
+              "
+            ></span>
+            LIVE
+          </div>
+        </header>
+
+        <div id="session-info" class="qr-session-meta">
+          세션 정보를 불러오는 중입니다...
+        </div>
+
+        <div
+          id="session-error"
+          class="pill pill-error hidden"
+          style="margin-top: 6px"
+        >
+          세션 정보를 찾을 수 없습니다. 올바른 QR인지 확인해 주세요.
+        </div>
+
+        <form id="attendance-form" class="qr-form hidden" autocomplete="off">
+          <div class="field">
+            <label for="name">이름</label>
+            <input
+              id="name"
+              type="text"
+              placeholder="예) 홍길동"
+              required
+              autocomplete="name"
+            />
+          </div>
+          <div class="field">
+            <label for="department">부서</label>
+            <select id="department" required>
+              <option value="">부서를 선택하세요</option>
+              <option value="소방행정과">소방행정과</option>
+              <option value="방호예방과">방호예방과</option>
+              <option value="구조구급과">구조구급과</option>
+              <option value="현장대응단">현장대응단</option>
+              <option value="의용소방대">의용소방대</option>
+              <option value="기타">기타</option>
+            </select>
+          </div>
+          <div class="field hidden" id="department-etc-wrap">
+            <label for="department-etc">기타 부서명</label>
+            <input
+              id="department-etc"
+              type="text"
+              placeholder="소속 또는 부서명을 입력하세요"
+            />
+          </div>
+
+          <button type="submit" class="btn btn-primary">
+            출석 확인
+          </button>
+        </form>
+
+        <div
+          id="attendance-success"
+          class="pill pill-success hidden"
+          style="margin-top: 10px"
+        >
+          출석이 정상적으로 등록되었습니다. 감사합니다.
+        </div>
+
+        <div
+          id="attendance-dup"
+          class="pill pill-warning hidden"
+          style="margin-top: 10px"
+        >
+          이미 같은 이름·부서로 출석이 등록되어 있습니다.
+        </div>
+
+        <div
+          id="attendance-error"
+          class="pill pill-error hidden"
+          style="margin-top: 10px"
+        >
+          출석 등록 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.
+        </div>
+
+        <footer class="qr-footer">
+          - 이름과 부서를 정확히 입력해 주세요.<br />
+          - 같은 이름·부서로 중복 출석은 자동으로 막아줍니다.
+        </footer>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast-container hidden" id="toast-container"></div>
+
+    <script src="./qrcheck.js"></script>
+  </body>
+</html>
+
