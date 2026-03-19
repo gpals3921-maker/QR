@@ -123,14 +123,12 @@ function buildQrUrl(sessionId) {
     origin: window.location.origin,
     pathname: window.location.pathname,
   });
-  const base = `${window.location.origin}${window.location.pathname}`;
-  // index.html -> qrcheck.html
-  const qrPage = base.replace(/index\.html?$/i, "qrcheck.html");
-  const url = qrPage.includes("qrcheck.html")
-    ? qrPage
-    : `${window.location.origin}/qrcheck.html`;
-  const finalUrl = `${url}?session=${encodeURIComponent(sessionId)}`;
-  console.log("[QR][buildQrUrl] result", { base, qrPage, url, finalUrl });
+  // GitHub Pages는 도메인 루트(username.github.io/) 또는 프로젝트 경로(/<repo>/)로
+  // 배포될 수 있어서, "현재 페이지 기준"으로 qrcheck.html을 상대 경로 해석합니다.
+  const finalUrlObj = new URL("qrcheck.html", window.location.href);
+  finalUrlObj.searchParams.set("session", sessionId);
+  const finalUrl = finalUrlObj.toString();
+  console.log("[QR][buildQrUrl] result", { finalUrl });
   return finalUrl;
 }
 
